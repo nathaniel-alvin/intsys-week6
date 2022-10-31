@@ -24,20 +24,25 @@ q_table = np.zeros([env.observation_space.n, env.action_space.n])
 
 alpha = 0.1  # learning rate
 gamma = 0.6  # discount factor
-epsilon = 0.3
-for i in range(1, 100001):
+epsilon = 1
+decay = 0.005
+
+NUM_EPISODES = 100000
+MAX_STEPS = 99  # per episode
+
+for i in range(NUM_EPISODES):
     state = env.reset()
 
-    epochs, penalties, reward = 0, 0, 0
+    penalties, reward = 0, 0
     done = False
 
-    while not done:
+    for s in range(MAX_STEPS):
         if random.uniform(0, 1) < epsilon:  # explore
             action = env.action_space.sample()
-        else:
+        else:  # exploit
             action = np.argmax(q_table[state])
 
-        next_state, reward, done, _ = env.step(action)
+        next_state, reward, _, _ = env.step(action)
         # env.render()
         # time.sleep(0.5)
         old_value = q_table[state, action]
@@ -50,11 +55,37 @@ for i in range(1, 100001):
             penalties += 1
 
         state = next_state
-        epochs += 1
+
+        if done == True:
+            break
+
+    # Decrease epsilon
+    epsilon = np.exp(-decay * i)
 
     if i % 100 == 0:
         clear_output(wait=True)
-        print(f"Episode: {i}")
-        print(f"Time steps: {epochs}, Penalties: {penalties}")
-
+        print(f"Episode: {i + 1}")
+        print(f"Penalties: {penalties}")
+    state = env.reset()
 print("Training finished \n")
+input("Press Enter to watch trained agent...")
+
+state = env.reset()
+done = False
+rewards = 0
+
+for s in range(MAX_STEPS):
+    print("Trained Agent")
+    print(f"Step {s+1}")
+    action = np.argmax(q_table[state, :])
+
+    new_state, reward, _, _ = env.step(action)
+    rewards += reward
+    env.render()
+    print(f"score: {rewards}")
+    state = new_state
+
+    if done == True:
+        break
+
+env.close()
